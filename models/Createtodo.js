@@ -36,9 +36,41 @@ const todoSchema = new mongoose.Schema({
         type: String,
         enum: ['Low', 'Medium', 'High'],
         default: 'Medium'
-    }    
+    },
+    isRecurring: {
+        type: Boolean,
+        default: false
+    },
+   recurrence: {
+    frequency: {
+        type: String,
+        enum: ['Daily', 'Weekly', 'Monthly', 'Yearly'],
+        required: function () {
+            return this.isRecurring;
+        }
+    },
+
+    interval: {
+        type: Number,
+        default: 1,
+        required: function () {
+            return this.isRecurring;
+        }
+    },
+
+    daysOfWeek: [{
+        type: Number,
+        enum: [0, 1, 2, 3, 4, 5, 6]
+    }],
+
+    endDate: {
+        type: Date
+    }
 },
-{
+    completedDates: [{ type: Date }]
+},
+
+    {
         timestamps: true
     }
 )

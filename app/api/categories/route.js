@@ -3,6 +3,30 @@ import Category from "@/models/Category";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
+export async function POST(request){
+    await connectDB();
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if(!token){
+        return NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 });    
+    }
+    console.log("TOKEN:", token);
+    const body = await request.json();
+    try {
+        const category = await Category.create({
+            name: body.name,
+            user: token.sub,
+            color: body.color
+        });
+        console.log("Saving category:", category);
+        await category.save();
+        console.log("Created category:", category);
+        return NextResponse.json({ success: true, category }, { status: 201 });
+        
+    } catch (error) {
+        console.error("Error creating category:", error);
+        return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
+    }
+}
 export async function GET(request){
     await connectDB();
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
@@ -19,25 +43,3 @@ export async function GET(request){
     }
 }
 
-export async function POST(request){
-    await connectDB();
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if(!token){
-        return NextResponse(JSON.stringify({ error: "Unauthorized" }), { status: 401 });    
-    }
-    console.log("TOKEN:", token);
-    const body = await request.json();
-    try {
-        const category = await Category.create({
-            name: body.name,
-            user: token.sub,
-            color: body.color
-        });
-        console.log("Created category:", category);
-        return NextResponse.json({ success: true, category }, { status: 201 });
-        
-    } catch (error) {
-        console.error("Error creating category:", error);
-        return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
-    }
-}

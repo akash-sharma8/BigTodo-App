@@ -2,8 +2,7 @@ import connectDB from "@/config/Db";
 import Createtodo from "@/models/Createtodo";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
-
-
+import Category from "@/models/Category";   
 
 export async function GET(request){
     await connectDB();
@@ -11,10 +10,19 @@ export async function GET(request){
     if (!token) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    console.log("token.sub",token.sub);
     try {
-        const todos = await Createtodo.find({ user: token.sub })
-  .populate("category", "name color") // only required fields
-  .sort({ createdAt: -1 }).lean(); // latest first
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+        const todos = await Createtodo.find({ user: token.sub,
+            $or: [
+                { dueDate: { $lte: endOfToday }, statusTracking: { $ne: 'Completed' } },
+                { dueDate: { $exists: false } },
+                { statusTracking: 'Completed', updatedAt: { $gte: new Date().setHours(0,0,0,0) } }
+            ]
+        })
+        .populate("category", "name color")
+        .sort({ dueDate: 1 }).lean();
        return NextResponse.json(
   { success: true, todos },
   { status: 200 }

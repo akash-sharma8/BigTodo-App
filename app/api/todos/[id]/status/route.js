@@ -24,17 +24,73 @@ export async function PUT(request, context) {
 
     try {
         const todo = await Createtodo.findOneAndUpdate(
-            { _id: id, user: token.sub },
-            { statusTracking },
-            { new: true }
+            {
+                _id: id,
+                user: token.sub
+            },
         );
 
         if (!todo) {
             return NextResponse.json({ error: "Todo not found" }, { status: 404 });
         }
+        if (statusTracking === "Completed" && todo.isRecurring) {
+            let nextDueDate = todo.dueDate ? new Date(todo.dueDate) : new Date();
+            const interval = todo.recurrence?.interval || 1;
+            const freq = todo.recurrence?.frequency || 'daily';
 
-        return NextResponse.json({ success: true, todo });
+            if (freq === 'daily') {
+                nextDueDate.setDate(nextDueDate.getDate() + interval);
+            }
+            else if (freq === 'weekly') {
+                const daysOfWeek = todo.recurrence?.daysOfWeek || [];
+                if (daysOfWeek.length > 0) {
+                    let matchFound = false;
+                    // Look up to 7 days ahead to find the next active weekday match
+                    for (let i = 1; i <= 7; i++) {
+                        let candidateDate = todo.dueDate ? new Date(todo.dueDate) : new Date();
+                        candidateDate.setDate(candidateDate.getDate() + i);
+                        if (daysOfWeek.includes(candidateDate.getDay())) {
+                            nextDueDate = candidateDate;
+                            matchFound = true;
+                            break;
+                        }
+                    }
+                    if (!matchFound) {
+                        nextDueDate.setDate(nextDueDate.getDate() + (7 * interval));
+                    }
+                } else {
+                    nextDueDate.setDate(nextDueDate.getDate() + (7 * interval));
+                }
+            }
+            else if (freq === 'monthly') {
+                nextDueDate.setMonth(nextDueDate.getMonth() + interval);
+            }
 
+            // Update parameters to cycle task forward safely
+            todo.dueDate = nextDueDate;
+            todo.statusTracking = 'Pending'; // Cycle status back to Pending for the next day
+
+            // Push current date timestamp into historical tracking array if it exists in your schema
+            if (todo.completedHistory) {
+                todo.completedHistory.push(new Date());
+            }
+
+            await todo.save();
+
+            // Populate category details so dashboard rendering doesn't break
+            const populatedTodo = await Createtodo.findById(todo._id).populate("category", "name color");
+
+
+            return NextResponse.json({ success: true, populatedTodo });
+
+        }
+
+        // Standard, non-recurring item path logic
+        todo.statusTracking = statusTracking;
+        await todo.save();
+
+        const populatedStandardTodo = await Createtodo.findById(todo._id).populate("category", "name color");
+        return NextResponse.json({ success: true, todo: populatedStandardTodo });
     } catch (error) {
         console.error("Error updating status:", error);
         return NextResponse.json({ error: "Failed to update status" }, { status: 500 });

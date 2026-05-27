@@ -14,7 +14,8 @@ export async function PUT(request,context){
     }
     const {id} = await context.params;
     const body = await request.json();
-    const { title, description, categoryId, dueDate, priorityLevel, statusTracking } = body;
+    const { title, description, categoryId, dueDate, priorityLevel, statusTracking ,isRecurring,
+recurrence} = body;
 
     if (!title || !description || !categoryId || !priorityLevel || !statusTracking) {
         return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -40,11 +41,18 @@ export async function PUT(request,context){
         const updatedTodo = await Createtodo.findByIdAndUpdate(
             id,
             {
-                 title, description, category: categoryId, dueDate: dueDate ? new Date(dueDate) : undefined, priorityLevel, statusTracking},
+                 title, description, category: categoryId, dueDate: dueDate ? new Date(dueDate) : undefined, priorityLevel, statusTracking,
+                isRecurring: isRecurring || false,
+
+            recurrence: isRecurring ? {
+                frequency: recurrence?.frequency || 'daily',
+                interval: recurrence?.interval || 1,
+                daysOfWeek: recurrence?.daysOfWeek || []
+            } : { frequency: 'daily', interval: 1, daysOfWeek: [] }},
             {
                  new: true 
             }
-        );
+        ).populate("category", "name color").lean();
         return NextResponse.json({ success: true, todo: updatedTodo }, { status: 200 });
     } catch (error) {
         console.error("Error updating todo:", error);

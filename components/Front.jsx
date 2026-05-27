@@ -1,27 +1,26 @@
 "use client";
-import React from 'react'
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
+
 const Front = () => {
   return (
+    <div className="relative min-h-screen w-full flex items-center justify-center
+    bg-white text-black 
+    dark:bg-slate-950 dark:text-white">
 
-
-    <div className="relative h-[91.7vh] w-full flex bg-slate-950">
-      <div className="absolute bottom-0 left-0 text-orange-500 text-8xl flex justify-center items-center right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,#3e3e3e,transparent)]"><motion.div 
-        // Start small and invisible
-        initial={{ scale: 0.5, opacity: 0 }} 
-        // Animate to full size and visible
-        animate={{ scale: 1, opacity: 1 }} 
-        // Optional: fine-tune the "feel"
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="absolute bottom-0 left-0 text-orange-500 text-8xl flex justify-center items-center right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,#3e3e3e,transparent)]"
+        className="text-4xl md:text-6xl font-bold text-center
+        bg-[radial-gradient(circle_400px_at_50%_100px,#cbd5f5,transparent)]
+        dark:bg-[radial-gradient(circle_500px_at_50%_200px,#3e3e3e,transparent)]"
       >
         Welcome to the Todo App
       </motion.div>
-      </div>
+
     </div>
+  );
+};
 
-
-  )
-}
-
-export default Front
+export default Front;

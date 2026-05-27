@@ -6,20 +6,17 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
     try {
         await connectDB()
-        const {name, email, password, confirmPassword} = await req.json();
+        const {name, email, password} = await req.json();
         const existingUser = await UserModel.findOne({ email })
-
         if(existingUser){
-            return Response.json({ message: "User already exists" }, { status: 400 })
+            return NextResponse.json({ message: "User already exists" }, { status: 400 })
         }
-
         const hashedPassword = await bcrypt.hash(password, 10)
-        
         const newUser = await UserModel.create({
             name,
             email,
             password: hashedPassword,
-            confirmPassword: hashedPassword
+            
         })
         const token = jwt.sign({ email }, process.env.NEXTAUTH_SECRET, { expiresIn: "1h" })
         const response = NextResponse.json({ message: "User created successfully" , success: true}, { status: 200 })
@@ -33,6 +30,6 @@ export async function POST(req) {
                 return response;
     } catch (error) {
         console.error(error)
-        return Response.json({ message: "Internal Server Error" }, { status: 500 })
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 })
     }
 }

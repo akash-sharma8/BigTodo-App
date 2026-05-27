@@ -3,9 +3,9 @@
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 
-export function ThemeProvider({ children }) {
+export function ThemeProvider({ children, ...props }) {
   return (
-    <NextThemesProvider>
+    <NextThemesProvider {...props}>
       {children}
     </NextThemesProvider>
   )

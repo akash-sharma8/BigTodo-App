@@ -13,7 +13,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { title, description, categoryId, dueDate, priorityLevel,statusTracking,completed } = body;
+    const { title, description, categoryId, dueDate, priorityLevel,statusTracking, isRecurring, recurrence } = body;
     console.log(body);
 
     if (!title?.trim() || !description?.trim() || !categoryId) {
@@ -28,16 +28,30 @@ export async function POST(request) {
         return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
 
-    const todo = await Createtodo.create({
-        title,
-        description,
-        category: categoryId,
-        user: token.sub,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        priorityLevel: priorityLevel || "Medium",
-        statusTracking: statusTracking || "Pending",
-        completed: completed || false
-    });
+    const todoData = {
+       title,
+            description,
+            category: categoryId,
+            dueDate: new Date(dueDate),
+            priorityLevel,
+            statusTracking,
+            user: token.sub,
+            isRecurring: isRecurring || false
+    }
+    if (isRecurring && recurrence) {
+            todoData.recurrence = {
+                frequency: recurrence.frequency,
+                interval: parseInt(recurrence.interval) || 1,
+                // Ensure daysOfWeek fallback to empty array safely if undefined
+                daysOfWeek: Array.isArray(recurrence.daysOfWeek) ? recurrence.daysOfWeek : []
+            };
+            if (recurrence.endDate) {
+                todoData.recurrence.endDate = new Date(recurrence.endDate);
+            }
+        }
+
+        const todo = await Createtodo.create(todoData);
+        return NextResponse.json({ success: true, todo }, { status: 201 });
 
     try {
         return NextResponse.json({ success: true, todo }, { status: 201 });
