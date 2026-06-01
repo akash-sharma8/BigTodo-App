@@ -27,6 +27,10 @@ const todoSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    nextOccurrence: {
+        type: Date
+    },
+
     statusTracking: {
         type: String,
         enum: ['Pending', 'In Progress', 'Completed'],

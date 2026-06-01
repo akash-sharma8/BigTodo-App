@@ -49,7 +49,13 @@ export async function POST(request) {
                 todoData.recurrence.endDate = new Date(recurrence.endDate);
             }
         }
-
+            if(statusTracking === "Completed") {
+            todo.statusTracking = "Completed";
+            todo.completed = true;
+        } else {
+            todo.statusTracking = statusTracking || "Pending";
+            todo.completed = false;
+        }   
         const todo = await Createtodo.create(todoData);
         return NextResponse.json({ success: true, todo }, { status: 201 });
 

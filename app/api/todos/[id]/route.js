@@ -5,60 +5,107 @@ import Category from "@/models/Category";
 import { NextResponse } from "next/server";
 
 
-export async function PUT(request,context){
-    await connectDB();
+export async function PUT(request, context) {
+  await connectDB();
 
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });    
-    if (!token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = context.params;
+  const body = await request.json();
+
+  const {
+    title,
+    description,
+    categoryId,
+    dueDate,
+    priorityLevel,
+    statusTracking,
+    isRecurring,
+    recurrence,
+  } = body;
+
+  if (!title || !description || !categoryId || !priorityLevel || !statusTracking) {
+    return NextResponse.json(
+      { error: "All fields are required" },
+      { status: 400 }
+    );
+  }
+
+  const existingTodo = await Createtodo.findOne({
+    _id: id,
+    user: token.sub,
+  });
+
+  if (!existingTodo) {
+    return NextResponse.json({ error: "Todo not found" }, { status: 404 });
+  }
+
+  const category = await Category.findOne({
+    _id: categoryId,
+    user: token.sub,
+  });
+
+  if (!category) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  }
+
+  try {
+    let updateData = {
+      title,
+      description,
+      category: categoryId,
+      dueDate: dueDate ? new Date(dueDate) : existingTodo.dueDate,
+      priorityLevel,
+      statusTracking,
+      isRecurring: isRecurring || false,
+      recurrence: isRecurring
+        ? {
+            frequency: recurrence?.frequency || "Daily",
+            interval: recurrence?.interval || 1,
+            daysOfWeek: recurrence?.daysOfWeek || [],
+          }
+        : { frequency: "Daily", interval: 1, daysOfWeek: [] },
+    };
+
+    // 🔁 Recurring logic
+    if (statusTracking === "Completed") {
+      if (existingTodo.isRecurring) {
+        // move due date forward instead of completing permanently
+        const nextDate = new Date(existingTodo.dueDate);
+
+        const interval = recurrence?.interval || 1;
+        nextDate.setDate(nextDate.getDate() + interval);
+
+        updateData.dueDate = nextDate;
+        updateData.statusTracking = "Pending";
+      } else {
+        updateData.statusTracking = "Completed";
+        updateData.completed = true;
+      }
     }
-    const {id} = await context.params;
-    const body = await request.json();
-    const { title, description, categoryId, dueDate, priorityLevel, statusTracking ,isRecurring,
-recurrence} = body;
 
-    if (!title || !description || !categoryId || !priorityLevel || !statusTracking) {
-        return NextResponse.json({ error: "All fields are required" }, { status: 400 });
-    }
+    const updatedTodo = await Createtodo.findByIdAndUpdate(id, updateData, {
+      new: true,
+    }).populate("category", "name color");
 
-    const existingTodo = await Createtodo.findOne({
-        _id: id,
-        user: token.sub
-    });
-    if (!existingTodo) {
-        return NextResponse.json({ error: "Todo not found" }, { status: 404 });
-    }
-
-    const category = await Category.findOne({
-        _id: categoryId,
-        user: token.sub
-    });
-    if (!category) {
-        return NextResponse.json({ error: "Invalid category" }, { status: 400 });
-    }
-
-    try {
-        const updatedTodo = await Createtodo.findByIdAndUpdate(
-            id,
-            {
-                 title, description, category: categoryId, dueDate: dueDate ? new Date(dueDate) : undefined, priorityLevel, statusTracking,
-                isRecurring: isRecurring || false,
-
-            recurrence: isRecurring ? {
-                frequency: recurrence?.frequency || 'daily',
-                interval: recurrence?.interval || 1,
-                daysOfWeek: recurrence?.daysOfWeek || []
-            } : { frequency: 'daily', interval: 1, daysOfWeek: [] }},
-            {
-                 new: true 
-            }
-        ).populate("category", "name color").lean();
-        return NextResponse.json({ success: true, todo: updatedTodo }, { status: 200 });
-    } catch (error) {
-        console.error("Error updating todo:", error);
-        return NextResponse.json({ error: "Failed to update todo" }, { status: 500 });
-    }
-
+    return NextResponse.json(
+      { success: true, todo: updatedTodo },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating todo:", error);
+    return NextResponse.json(
+      { error: "Failed to update todo" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request, context) {
@@ -93,7 +140,7 @@ export async function DELETE(request, context) {
     return NextResponse.json({ success: true });
 }
 
-export async function GET(request, context){
+export async function GET(request, context) {
     await connectDB();
     try {
         const { id } = await context.params; // ✅ FIXED

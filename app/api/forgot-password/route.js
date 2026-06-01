@@ -1,18 +1,13 @@
 import crypto from "crypto";
-
 import UserModel from "@/models/User";
 import connectDB from "@/config/Db";
-
 import { NextResponse } from "next/server";
-
 import { resend } from "@/lib/resend";
 
 export async function POST(req) {
 
   try {
-
     await connectDB();
-
     const { email } = await req.json();
 
     if (!email) {
@@ -27,11 +22,10 @@ export async function POST(req) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        {
-          message:
-            "No user found with this email",
-        },
+      return NextResponse.json({
+        message:
+          "No user found with this email",
+      },
         { status: 404 }
       );
     }
@@ -49,33 +43,28 @@ export async function POST(req) {
 
     // save in DB
     user.resetToken = hashedToken;
-console.log("TOKEN:", resetToken);
-console.log("HASHED:", hashedToken);
+    console.log("TOKEN:", resetToken);
+    console.log("HASHED:", hashedToken);
     user.resetTokenExpiry =
       Date.now() + 1000 * 60 * 15;
 
     await user.save();
-
     // reset URL
+
     const resetUrl =
-`${process.env.NEXTAUTH_URL}/reset-password/${resetToken}`;
+      `${process.env.NEXTAUTH_URL}/reset-password/${resetToken}`;
 
     // send email
     await resend.emails.send({
 
       from: "onboarding@resend.dev",
-
       to: user.email,
-
       subject: "Reset Password",
-
       html: `
         <h2>Password Reset</h2>
-
         <p>
           Click below to reset your password
         </p>
-
         <a href="${resetUrl}">
           Reset Password
         </a>

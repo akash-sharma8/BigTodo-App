@@ -45,7 +45,11 @@ const Dashboard = () => {
         // If it was a recurring item shifted to completed, your backend will return 
         // the modified document with status back to "Pending" but a newer date.
         if (response.data.todo) {
-          setTodos(todos.map(todo => todo._id === id ? response.data.todo : todo));
+          setTodos(prev =>
+            prev.map(todo =>
+              todo._id === id ? (response.data.todo || { ...todo, statusTracking: newStatus }) : todo
+            )
+          );
         } else {
           setTodos(todos.map(todo => todo._id === id ? { ...todo, statusTracking: newStatus } : todo));
         }
@@ -62,11 +66,11 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white text-black dark:bg-[#0f172a] dark:text-slate-200 p-6">
       <div className="max-w-3xl mx-auto">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold">My Events</h1>
-          <button 
+          <button
             onClick={() => router.push('/create-todo')}
             className="flex items-center gap-2 text-xs font-bold px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all"
           >
@@ -79,13 +83,12 @@ const Dashboard = () => {
           {todos.map((todo) => (
             <div
               key={todo._id}
-              className={`group border p-5 rounded-xl transition-all duration-300 bg-gray-100 border-gray-300 dark:bg-slate-800/40 dark:border-slate-700/50 ${
-                todo.statusTracking === 'Completed' ? 'opacity-75' : 'hover:border-indigo-500/50'
-              }`}
+              className={`group border p-5 rounded-xl transition-all duration-300 bg-gray-100 border-gray-300 dark:bg-slate-800/40 dark:border-slate-700/50 ${todo.statusTracking === 'Completed' ? 'opacity-75' : 'hover:border-indigo-500/50'
+                }`}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="space-y-1 flex-1">
-                  
+
                   {/* Tags Row */}
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span
@@ -95,9 +98,8 @@ const Dashboard = () => {
                       {todo.category?.name || 'General'}
                     </span>
 
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200 border border-gray-300 dark:bg-slate-900 dark:border-slate-700 ${
-                      todo.priorityLevel === 'High' ? 'text-red-500' : 'text-gray-600 dark:text-slate-400'
-                    }`}>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded bg-gray-200 border border-gray-300 dark:bg-slate-900 dark:border-slate-700 ${todo.priorityLevel === 'High' ? 'text-red-500' : 'text-gray-600 dark:text-slate-400'
+                      }`}>
                       {todo.priorityLevel}
                     </span>
 
@@ -110,15 +112,13 @@ const Dashboard = () => {
                     )}
                   </div>
 
-                  <h2 className={`text-lg font-semibold transition-all ${
-                    todo.statusTracking === 'Completed' ? 'text-gray-400 line-through dark:text-slate-500' : 'text-gray-900 dark:text-slate-100'
-                  }`}>
+                  <h2 className={`text-lg font-semibold transition-all ${todo.statusTracking === 'Completed' ? 'text-gray-400 line-through dark:text-slate-500' : 'text-gray-900 dark:text-slate-100'
+                    }`}>
                     {todo.title}
                   </h2>
 
-                  <p className={`text-sm leading-relaxed ${
-                    todo.statusTracking === 'Completed' ? 'text-gray-400 dark:text-slate-600' : 'text-gray-600 dark:text-slate-400'
-                  }`}>
+                  <p className={`text-sm leading-relaxed ${todo.statusTracking === 'Completed' ? 'text-gray-400 dark:text-slate-600' : 'text-gray-600 dark:text-slate-400'
+                    }`}>
                     {todo.description}
                   </p>
 
@@ -154,13 +154,12 @@ const Dashboard = () => {
                   <select
                     value={todo.statusTracking}
                     onChange={(e) => handleToggleStatus(todo._id, e.target.value)}
-                    className={`text-xs font-bold py-1 px-3 rounded-md border bg-white dark:bg-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
-                      todo.statusTracking === 'Completed'
+                    className={`text-xs font-bold py-1 px-3 rounded-md border bg-white dark:bg-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${todo.statusTracking === 'Completed'
                         ? 'text-emerald-500 border-emerald-400'
                         : todo.statusTracking === 'In Progress'
                           ? 'text-blue-500 border-blue-400'
                           : 'text-amber-500 border-amber-400'
-                    }`}
+                      }`}
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">In Progress</option>

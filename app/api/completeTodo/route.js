@@ -1,60 +1,84 @@
 import User from "@/models/User";
-import CreateTodo from "@/app/(app)/create-todo/page";
-
+import CreateTodo from "@/models/Createtodo";
+import connectDB from "@/config/Db";
 
 export const completeTodo = async (req, res) => {
+
+    await connectDB();
+
     const { todoId } = req.body;
+
+    if (!todoId) {
+        return res.status(400).json({ error: "todoId missing" });
+    }
+
     const todo = await CreateTodo.findById(todoId);
+
     if (!todo) {
         return res.status(404).json({ error: "Todo not found" });
     }
-    if (todo.isRecurring) {
-        const crrentDueDate = new Date(todo.dueDate);
-        let nextDueDate = new Date(crrentDueDate);
 
-        if (todo.recurrence.frequency === "Daily") {
-            nextDueDate.setDate(crrentDueDate.getDate() + todo.recurrence.interval);
-        }
-        else if (todo.recurrence.frequency === "Weekly") {
-            if (todo.recurrence.daysOfWeek && todo.recurrence.daysOfWeek.length > 0) {
-                let foundNextDay = false;
+    try {
 
-                for (let i = 1; i <= 7; i++) {
-                    let checkDate = new Date(crrentDueDate);
-                    checkDate.setDate(crrentDueDate.getDate() + i);
-                    if (todo.recurrence.daysOfWeek.includes(checkDate.getDay())) {
-                        nextDueDate = checkDate;
-                        foundNextDay = true;
-                        break;
+        if (todo.isRecurring) {
+
+            const currentDueDate = new Date(todo.dueDate);
+            let nextDueDate = new Date(currentDueDate);
+
+            if (todo.recurrence.frequency === "Daily") {
+                nextDueDate.setDate(currentDueDate.getDate() + todo.recurrence.interval);
+            }
+
+            else if (todo.recurrence.frequency === "Weekly") {
+
+                if (todo.recurrence.daysOfWeek?.length) {
+
+                    for (let i = 1; i <= 7; i++) {
+
+                        let checkDate = new Date(currentDueDate);
+                        checkDate.setDate(currentDueDate.getDate() + i);
+
+                        if (todo.recurrence.daysOfWeek.includes(checkDate.getDay())) {
+                            nextDueDate = checkDate;
+                            break;
+                        }
                     }
-                }
-                if (!foundNextDay) {
-                    nextDueDate.setDate(nextDueDate.getDate() + (7 * todo.recurrence.interval))
+                } else {
+                    nextDueDate.setDate(nextDueDate.getDate() + 7 * todo.recurrence.interval);
                 }
             }
-            else {
-                nextDueDate.setDate(nextDueDate.getDate() + (7 * todo.recurrence.interval));
+
+            else if (todo.recurrence.frequency === "Monthly") {
+                nextDueDate.setMonth(nextDueDate.getMonth() + todo.recurrence.interval);
             }
+
+            todo.completedDates.push(new Date());
+            todo.completed = true;
+            todo.statusTracking = "Completed";
+            todo.nextOccurrence = nextDueDate;
+
+        } else {
+
+            todo.statusTracking = "Completed";
+            todo.completed = true;
         }
-        else if (todo.recurrence.frequency === 'monthly') {
-            nextDueDate.setMonth(nextDueDate.getMonth() + todo.recurrence.interval);
-        }
 
-        // 2. Save current completion timestamp to history tracking
-        todo.completedHistory.push(new Date());
+        const saved = await todo.save();
 
-        // 3. Reset status back to Pending and advance the calendar date!
-        todo.dueDate = nextDueDate;
-        todo.statusTracking = 'Pending';
-        todo.completed = false;
+        console.log("SAVED TODO:", saved);
 
-        await todo.save();
-        return res.json({ success: true, message: "Task advanced to next occurrence!", nextDate: nextDueDate });
-    } else {
-        // Standard standalone task execution path
-        todo.completed = true;
-        todo.statusTracking = 'Completed';
-        await todo.save();
-        return res.json({ success: true, message: "Standard task completed!" });
+        return res.json({
+            success: true,
+            message: "Todo updated",
+            todo: saved
+        });
+
+    } catch (err) {
+
+        console.error("SAVE ERROR:", err);
+
+        return res.status(500).json({
+            error: "Failed to update todo"
+        });
     }
 };

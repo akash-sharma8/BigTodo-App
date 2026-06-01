@@ -36,12 +36,12 @@ export async function PUT(request, context) {
         if (statusTracking === "Completed" && todo.isRecurring) {
             let nextDueDate = todo.dueDate ? new Date(todo.dueDate) : new Date();
             const interval = todo.recurrence?.interval || 1;
-            const freq = todo.recurrence?.frequency || 'daily';
+            const freq = todo.recurrence?.frequency || 'Daily';
 
-            if (freq === 'daily') {
+            if (freq === 'Daily') {
                 nextDueDate.setDate(nextDueDate.getDate() + interval);
             }
-            else if (freq === 'weekly') {
+            else if (freq === 'Weekly') {
                 const daysOfWeek = todo.recurrence?.daysOfWeek || [];
                 if (daysOfWeek.length > 0) {
                     let matchFound = false;
@@ -62,7 +62,7 @@ export async function PUT(request, context) {
                     nextDueDate.setDate(nextDueDate.getDate() + (7 * interval));
                 }
             }
-            else if (freq === 'monthly') {
+            else if (freq === 'Monthly') {
                 nextDueDate.setMonth(nextDueDate.getMonth() + interval);
             }
 
@@ -84,10 +84,16 @@ export async function PUT(request, context) {
             return NextResponse.json({ success: true, populatedTodo });
 
         }
+        if (statusTracking === "Completed") {
+            todo.statusTracking = "Completed";
+            todo.completed = true;
+        } else {
+            todo.statusTracking = statusTracking;
+            todo.completed = false; 
+        }
 
-        // Standard, non-recurring item path logic
-        todo.statusTracking = statusTracking;
         await todo.save();
+
 
         const populatedStandardTodo = await Createtodo.findById(todo._id).populate("category", "name color");
         return NextResponse.json({ success: true, todo: populatedStandardTodo });

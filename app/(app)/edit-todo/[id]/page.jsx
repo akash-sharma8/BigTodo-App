@@ -235,9 +235,9 @@ const EditTodo = () => {
                       recurrence: { ...formData.recurrence, frequency: e.target.value, daysOfWeek: [] }
                     })}
                   >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
                   </select>
                 </div>
 
@@ -255,7 +255,7 @@ const EditTodo = () => {
                   />
                 </div>
 
-                {formData.recurrence.frequency === 'weekly' && (
+                {formData.recurrence.frequency === 'Weekly' && (
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-medium mb-2 text-gray-500 dark:text-slate-400">Repeat on specific days</label>
                     <div className="flex gap-1.5 justify-start">
